@@ -43,7 +43,7 @@ class RoPE(nn.Module):
 
 # Qwen2.5 uses half split RoPE instead of consecutive pairs
 # [x1, x2, x3, x4] -> groups (x1, x3) and (x2, x4)
-def reorder_half(self, x):
+def reorder_half(x):
 
     half = x.shape[-1] // 2
     x1 = x[..., :half]
@@ -51,6 +51,6 @@ def reorder_half(self, x):
 
     return torch.cat((-x2, x1), dim = -1)
 
-def apply_rope(self, x, cos, sin):
+def apply_rope(x, cos, sin):
 
-    return x * cos + self.reorder_half(x) * sin
+    return x * cos + reorder_half(x) * sin

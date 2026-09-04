@@ -33,8 +33,8 @@ class Attention(nn.Module):
         # k,v have shape (batch_size, self.num_kv_heads, seq_len, self.head_dim)
         # k_t has shape (batch_size, self.num_kv_heads, self.head_dim, seq_len)
 
-        q = apply_rope(q, self.cos, self.sin)
-        k = apply_rope(k, self.cos, self.sin)
+        q = apply_rope(q, cos, sin)
+        k = apply_rope(k, cos, sin)
 
         # for GQA, repeat k_t,v kv_groups (7) times
         k = k.repeat_interleave(self.num_kv_groups, dim=1) 
