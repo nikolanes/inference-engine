@@ -7,20 +7,18 @@ class ModelConfig:
     vocab_size: int
     hidden_size: int
     intermediate_size: int
-
     num_hidden_layers: int
     num_attention_heads: int
     num_key_value_heads: int
-
     rms_norm_eps: float
     rope_theta: float
     max_position_embeddings: int
-
     tie_word_embeddings: bool
 
     def head_dim(self) -> int:
         return self.hidden_size // self.num_attention_heads
 
+    @classmethod
     def load(cls, config_path):
         with open(config_path, 'r', encoding='utf-8') as file:
             data = json.load(file)
