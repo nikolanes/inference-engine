@@ -1,11 +1,14 @@
 import torch
 from qwen_engine.attention import Attention
+from qwen_engine.model import TransformerBlock
 
 
 class TestConfig:
     hidden_size = 8
     num_attention_heads = 2
     num_key_value_heads = 1
+    rms_norm_eps = 1e-6
+    intermediate_size = 16
 
     def head_dim(self):
         return self.hidden_size // self.num_attention_heads
@@ -59,3 +62,21 @@ def test_attn_causal():
     out2 = attn(x2, cos, sin)
 
     assert torch.allclose(out1[:, :3, :], out2[:, :3, :], atol=1e-6)
+
+
+def test_transformer_block():
+    
+    block = TransformerBlock(config)
+
+    batch_size = 2
+    seq_len = 4
+
+    x = torch.randn(batch_size, seq_len, config.hidden_size)
+
+    cos, sin = get_cos_sin(seq_len)
+
+    out = block(x, cos, sin)
+
+    assert out.shape == x.shape
+    assert not torch.isnan(out).any()
+    assert not torch.isinf(out).any()
