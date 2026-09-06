@@ -6,18 +6,19 @@ class RoPE(nn.Module):
     def __init__(self, head_dim: int, rope_theta: float):
         super().__init__()
 
-        inv_freq = 1.0 / (rope_theta ** (torch.arange(0, head_dim, 2).float() / head_dim))
+        self.inv_freq = 1.0 / (rope_theta ** (torch.arange(0, head_dim, 2).float() / head_dim))
         #self.register_buffer("inv_freq", inv_freq)
 
         self.cos_cache = None
         self.sin_cache = None
         self.cache_seq_len = 0
 
+    # some simple caching to avoid recomputation
     def extend_cache(self, seq_len: int):
-        if seq_len <= self.cached_seq_len:
+        if seq_len <= self.cache_seq_len:
             return
 
-        positions = torch.arange(self.cached_seq_len, seq_len, device=self.inv_freq.device)
+        positions = torch.arange(self.cache_seq_len, seq_len, device=self.inv_freq.device)
         freqs = (positions.reshape(-1, 1) * self.inv_freq.reshape(1, -1))
         emb = torch.cat((freqs, freqs), dim=-1)
 
@@ -34,7 +35,7 @@ class RoPE(nn.Module):
 
         self.cache_seq_len = seq_len
 
-    def get_cos_sin(self, seq_len: int):
+    def forward(self, seq_len: int):
 
         self.extend_cache(seq_len)
         return (self.cos_cache[:seq_len], self.sin_cache[:seq_len])
