@@ -48,9 +48,9 @@ class Attention(nn.Module):
         logits = logits / math.sqrt(self.head_dim)
 
         mask = torch.triu(
-            torch.ones(seq_len, seq_len, device=x.device, dtype=torch.bool), 
-            diagonal=1)
-
+                    torch.ones(seq_len, seq_len, device=x.device, dtype=torch.bool), 
+                    diagonal=1)
+        # a token shouldn't look at tokens after it
         logits = logits.masked_fill(mask, float("-inf"))
         softmax = torch.softmax(logits, dim=-1)
 
