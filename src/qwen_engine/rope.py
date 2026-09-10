@@ -40,10 +40,11 @@ class RoPE(nn.Module):
 
         self.cache_seq_len = seq_len
 
-    def forward(self, seq_len: int):
+    def forward(self,  seq_len: int, start_pos: int = 0):
 
-        self.extend_cache(seq_len)
-        return (self.cos_cache[:seq_len], self.sin_cache[:seq_len])
+        end_pos = start_pos + seq_len
+        self.extend_cache(end_pos)
+        return (self.cos_cache[start_pos:end_pos], self.sin_cache[start_pos:end_pos])
 
 
 '''

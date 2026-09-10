@@ -4,7 +4,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from qwen_engine.config import ModelConfig
 from qwen_engine.model import QwenModel
 from qwen_engine.weights import load_model_weights
-from qwen_engine.generation import generate_greedy
+from qwen_engine.generation import generate_greedy, generate_greedy_cached
 
 def test_generation():
 
@@ -25,7 +25,8 @@ def test_generation():
 
     load_model_weights(model,f"{MODEL_PATH}/model.safetensors")
 
-    my_output = generate_greedy(model, input_ids.clone(), max_new_tokens=max_toks)
+    with torch.no_grad():
+        my_output = generate_greedy(model, input_ids.clone(), max_new_tokens=max_toks)
 
     hf_model = AutoModelForCausalLM.from_pretrained(MODEL_PATH, torch_dtype=torch.float32)
 
@@ -40,3 +41,34 @@ def test_generation():
     print("My model output:", tokenizer.decode(my_output[0]))
     print("HF output:", tokenizer.decode(hf_output[0]))
     print("Exact token match:", torch.equal(my_output, hf_output))
+
+
+def test_generation_cached():
+
+
+    MODEL_PATH = "models/Qwen2.5-0.5B"
+
+
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+
+    text = "The capital of France is"
+    max_toks = 10
+
+    input_ids = tokenizer.encode(text, return_tensors="pt")
+
+    config = ModelConfig.load(f"{MODEL_PATH}/config.json")
+
+    model = QwenModel(config)
+
+    load_model_weights(model,f"{MODEL_PATH}/model.safetensors")
+
+    with torch.no_grad():
+        test_output = generate_greedy(model, input_ids.clone(), max_new_tokens=max_toks)
+        cached_output = generate_greedy_cached(model, input_ids.clone(), max_new_tokens=max_toks)
+
+    print("Input:", text)
+    print("Test token IDs:", test_output)
+    print("Cached run token IDs:", cached_output)
+    print("Test output:", tokenizer.decode(test_output[0]))
+    print("Cached run output:", tokenizer.decode(cached_output[0]))
+    print("Exact token match:", torch.equal(test_output, cached_output))

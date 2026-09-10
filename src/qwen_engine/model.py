@@ -16,12 +16,12 @@ class TransformerBlock(nn.Module):
         self.post_attention_layernorm = RMSNorm(config.hidden_size, config.rms_norm_eps)
         self.mlp = MLP(config)
 
-    def forward(self, x, cos, sin):
+    def forward(self, x, cos, sin, use_cache = False):
 
         add_res1 = x
 
         x = self.input_layernorm(x)
-        x = self.attention(x, cos, sin)
+        x = self.attention(x, cos, sin, use_cache=use_cache)
 
         x = x + add_res1
         add_res2 = x
@@ -47,22 +47,31 @@ class QwenModel(nn.Module):
         self.rope = RoPE(config.head_dim(), config.rope_theta)
         self.norm = RMSNorm(config.hidden_size, config.rms_norm_eps)
 
-    def forward(self, input_ids):
+    def forward(self, input_ids, use_cache = False):
 
         batch_size, seq_len = input_ids.shape
+
+        prev_len = 0
+        if use_cache:
+            prev_len = self.layers[0].attention.cache_len()
 
         x = self.embed_tokens(input_ids)
         # x has shape (batch_size, seq_len, hidden_size)
 
-        cos, sin = self.rope(seq_len)
+        cos, sin = self.rope(seq_len, start_pos=prev_len)
 
         for layer in self.layers:
-            x = layer(x, cos, sin)
+            x = layer(x, cos, sin, use_cache=use_cache)
 
         x = self.norm(x)
 
         # logits has shape (batch_size, seq_len, vocab_size) -> logits[B, i] predicts token i+1
         logits = x @ self.embed_tokens.weight.T
         return logits
+
+    def reset_cache(self):
+
+        for layer in self.layers:
+            layer.attention.reset_cache()
 
 
